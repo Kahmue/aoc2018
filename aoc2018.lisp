@@ -92,13 +92,12 @@
    (width :initarg :width :reader claim-width)
    (height :initarg :height :reader claim-height)))
 
+
+;; #1137 @ 677,675: 13x18
 (defun read-claim (line)
-  (make-instance 'claim
-		 :number (parse-integer (subseq line 1 (1- (position #\@ line))))
-		 :left (parse-integer (subseq line (+ 2 (position #\@ line)) (position #\, line)))
-		 :top (parse-integer (subseq line (1+ (position #\, line)) (position #\: line)))
-		 :width (parse-integer (subseq line (+ 2 (position #\: line)) (position #\x line)))
-		 :height (parse-integer (subseq line (1+ (position #\x line))))))
+  (let* ((scanner (cl-ppcre:create-scanner "#([0-9]+) @ ([0-9]+),([0-9]+): ([0-9]+)x([0-9]+)"))
+	 (values (map 'vector #'parse-integer (nth-value 1 (cl-ppcre:scan-to-strings scanner line)))))
+    (make-instance 'claim :number (elt values 0) :left (elt values 1) :top (elt values 2) :width (elt values 3) :height (elt values 4))))
   
 (defun make-index (point-x point-y)
   (+ (* point-y 1000) point-x))
