@@ -80,3 +80,52 @@
 	   (if (= (- len (length diff)) 1)
 	       (return-from d2b diff))))
     (d2b (cdr input))))
+
+;;;; Day 3
+
+;;; A
+
+(defclass claim ()
+  ((number :initarg :number :reader claim-number)
+   (left :initarg :left :reader claim-left)
+   (top :initarg :top :reader claim-top)
+   (width :initarg :width :reader claim-width)
+   (height :initarg :height :reader claim-height)))
+
+(defun read-claim (line)
+  (make-instance 'claim
+		 :number (parse-integer (subseq line 1 (1- (position #\@ line))))
+		 :left (parse-integer (subseq line (+ 2 (position #\@ line)) (position #\, line)))
+		 :top (parse-integer (subseq line (1+ (position #\, line)) (position #\: line)))
+		 :width (parse-integer (subseq line (+ 2 (position #\: line)) (position #\x line)))
+		 :height (parse-integer (subseq line (1+ (position #\x line))))))
+  
+(defun make-index (point-x point-y)
+  (+ (* point-y 1000) point-x))
+
+(defmethod map-area ((claim claim) canvas)
+  (loop :for x :from 0 :below (claim-width claim)
+     :do (loop :for y :from 0 :below (claim-height claim)
+	    :do (incf (aref canvas (make-index (+ (claim-left claim) x) (+ (claim-top claim) y)))))))
+
+(defun d3a (input canvas)
+  (loop :for claim :in input
+     :do (map-area claim canvas))
+  (count-if #'(lambda (x) (> x 1)) canvas))
+
+;;; B
+
+(defmethod intact-p ((claim claim) canvas)
+  (loop :for row :from (claim-top claim) :below (+ (claim-top claim) (claim-height claim))
+     :do (if (not (zerop (count-if #'(lambda (x) (> x 1)) (subseq canvas (make-index (claim-left claim) row) (+ (claim-width claim) (make-index (claim-left claim) row))))))
+	     (return-from intact-p NIL)))
+  T)
+
+(defun d3b (input canvas)
+  (loop :for claim :in input
+     :do (map-area claim canvas))
+  (loop :for claim :in input
+     :do (if (intact-p claim canvas)
+	     (format t "Claim #~a is intact!~%" (claim-number claim)))))
+
+;(d3b (read-file "~/quicklisp/local-projects/aoc2018/aoc2018_3_input.txt" #'read-claim) (make-array (* 1000 1000) :initial-element 0))
